@@ -288,6 +288,16 @@ async function runKarateTest(args = null)
 		
   let karateEnv = String(vscode.workspace.getConfiguration('karateRunner.core').get('environment')).trim();
 
+	let javaHome = vscode.workspace.getConfiguration('karateRunner.java')?.get('home') ||
+		vscode.workspace.getConfiguration('java.import.gradle')?.get('java.home') ||
+		vscode.workspace.getConfiguration('java')?.get('home') ||
+		(vscode.workspace.getConfiguration('java.configuration.runtimes') || []).find(runtime => Boolean(runtime.get('default')))?.get('path');
+
+	let env = {};
+	if (javaHome) {
+		env['JAVA_HOME'] = javaHome;
+	}
+
 	if (runFilePath !== "" && !runFilePath.toLowerCase().endsWith(standaloneBuildFile))
 	{
 		if (!runFilePath.toLowerCase().endsWith(javaScriptBuildFile))
@@ -297,7 +307,7 @@ async function runKarateTest(args = null)
 				if (os.platform() == 'win32')
 				{
 					mavenCmd = "mvnw";
-					gradleCmd = "gradlew";
+					gradleCmd = vscode.workspace.getConfiguration('karateRunner.buildSystem').get('useDotSlashOnWindows') ? "./gradlew" : "gradlew";
 				}
 				else
 				{
@@ -454,7 +464,7 @@ async function runKarateTest(args = null)
 		}
 	});
 		
-	let seo: vscode.ShellExecutionOptions = { cwd: projectRootPath };
+	let seo: vscode.ShellExecutionOptions = { cwd: projectRootPath, env: env };
 	if (os.platform() == 'win32')
 	{
 		seo.executable = "cmd.exe";
